@@ -30,6 +30,7 @@ class HorizontalAnalysisResource extends Resource
                     ->options(Company::all()->pluck('name', 'id')) // Memilih perusahaan
                     ->required()
                     ->reactive()
+                    ->afterStateUpdated(fn($state, callable $set) => $set('year', null)) // Reset year jika company berubah
                     ->afterStateUpdated(fn($state, callable $set) => self::getAvailableYears($state, $set)),
 
                 Select::make('year')
@@ -160,6 +161,9 @@ class HorizontalAnalysisResource extends Resource
         ];
     }
 
+    /**
+     * Mengambil tahun yang tersedia untuk perusahaan
+     */
     private static function getAvailableYears($companyId)
     {
         if (!$companyId) {
@@ -172,9 +176,12 @@ class HorizontalAnalysisResource extends Resource
             ->toArray();
     }
 
+    /**
+     * Memuat data keuangan untuk tahun yang dipilih dan menghitung perbedaannya.
+     */
     private static function loadFinancialData($companyId, $year, $previousYear, callable $set)
     {
-        if ($companyId && $year && $previousYear) {
+        if ($companyId && $year && $previousYear && $year > $previousYear) {
             $currentYearData = FinancialData::where('company_id', $companyId)
                 ->where('year', $year)
                 ->first();
@@ -199,6 +206,22 @@ class HorizontalAnalysisResource extends Resource
                 $set('current_taxes_payables_difference', $currentYearData->current_taxes_payables - $previousYearData->current_taxes_payables);
                 $set('depreciation_amortization_difference', $currentYearData->depreciation_amortization - $previousYearData->depreciation_amortization);
             }
+        } else {
+            // Jika tahun tidak valid, kosongkan field
+            $set('sales_difference', null);
+            $set('cost_of_goods_sold_difference', null);
+            $set('current_assets_difference', null);
+            $set('plant_property_equipment_difference', null);
+            $set('sga_expenses_difference', null);
+            $set('total_assets_difference', null);
+            $set('depreciation_difference', null);
+            $set('account_receivables_difference', null);
+            $set('long_term_debt_difference', null);
+            $set('current_liabilities_difference', null);
+            $set('working_capital_difference', null);
+            $set('cash_difference', null);
+            $set('current_taxes_payables_difference', null);
+            $set('depreciation_amortization_difference', null);
         }
     }
 }

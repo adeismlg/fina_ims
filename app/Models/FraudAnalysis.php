@@ -9,10 +9,12 @@ class FraudAnalysis extends Model
 {
     use HasFactory;
 
-    // Kolom yang dapat diisi (fillable) saat melakukan insert/update
+    protected $table = 'fraud_analyses';
+
     protected $fillable = [
         'company_id',
         'horizontal_analysis_id',
+        'financial_data_id',
         'year',
         'dsri',
         'gmi',
@@ -22,7 +24,7 @@ class FraudAnalysis extends Model
         'sgai',
         'lvgi',
         'tata',
-        'beneish_m_score'
+        'beneish_m_score',
     ];
 
     /**
@@ -39,5 +41,13 @@ class FraudAnalysis extends Model
     public function horizontalAnalysis()
     {
         return $this->belongsTo(HorizontalAnalysis::class);
+    }
+
+    /**
+     * Relasi ke model FinancialData (setiap FraudAnalysis berhubungan dengan satu FinancialData)
+     */
+    public function financialData()
+    {
+        return $this->belongsTo(FinancialData::class);
     }
 }

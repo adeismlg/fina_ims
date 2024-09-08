@@ -7,37 +7,39 @@ use Illuminate\Support\Facades\Schema;
 class CreateFraudAnalysesTable extends Migration
 {
     /**
-     * Run the migrations.
-     *
-     * @return void
+     * Jalankan migration.
      */
     public function up()
     {
         Schema::create('fraud_analyses', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('company_id')->constrained()->onDelete('cascade');
-            $table->foreignId('horizontal_analysis_id')->constrained()->onDelete('cascade'); // Foreign key ke tabel horizontal_analyses
+            $table->unsignedBigInteger('company_id');
+            $table->unsignedBigInteger('horizontal_analysis_id')->nullable(); // Nama kolom yang benar
+            $table->unsignedBigInteger('financial_data_id')->nullable();
             $table->integer('year');
-            $table->double('dsri', 15, 8)->nullable();
-            $table->double('gmi', 15, 8)->nullable();
-            $table->double('aqi', 15, 8)->nullable();
-            $table->double('sgi', 15, 8)->nullable();
-            $table->double('depi', 15, 8)->nullable();
-            $table->double('sgai', 15, 8)->nullable();
-            $table->double('lvgi', 15, 8)->nullable();
-            $table->double('tata', 15, 8)->nullable();
-            $table->double('beneish_m_score', 15, 8)->nullable();
+            $table->decimal('dsri', 15, 6)->nullable();
+            $table->decimal('gmi', 15, 6)->nullable();
+            $table->decimal('aqi', 15, 6)->nullable();
+            $table->decimal('sgi', 15, 6)->nullable();
+            $table->decimal('depi', 15, 6)->nullable();
+            $table->decimal('sgai', 15, 6)->nullable();
+            $table->decimal('lvgi', 15, 6)->nullable();
+            $table->decimal('tata', 15, 6)->nullable();
+            $table->decimal('beneish_m_score', 15, 6)->nullable();
             $table->timestamps();
-        });        
+
+            // Foreign key constraints
+            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
+            $table->foreign('horizontal_analysis_id')->references('id')->on('horizontal_analyses')->onDelete('set null'); // Nama tabel dan kolom yang benar
+            $table->foreign('financial_data_id')->references('id')->on('financial_data')->onDelete('set null');
+        });
     }
 
     /**
-     * Reverse the migrations.
-     *
-     * @return void
+     * Rollback migration.
      */
     public function down()
     {
-        Schema::dropIfExists('fraud_analyses');
+        Schema::dropIfExists('fraud_analyses'); // Nama tabel yang benar
     }
 }

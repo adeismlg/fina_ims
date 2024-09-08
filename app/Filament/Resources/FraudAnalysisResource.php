@@ -6,6 +6,7 @@ use App\Filament\Resources\FraudAnalysisResource\Pages;
 use App\Models\FraudAnalysis;
 use App\Models\Company;
 use App\Models\HorizontalAnalysis;
+use App\Models\FinancialData;
 use Filament\Resources\Resource;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -19,7 +20,7 @@ class FraudAnalysisResource extends Resource
 {
     protected static ?string $model = FraudAnalysis::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-shield-check'; // Ikon di sidebar
+    protected static ?string $navigationIcon = 'heroicon-o-shield-check'; 
 
     public static function form(Form $form): Form
     {
@@ -27,22 +28,30 @@ class FraudAnalysisResource extends Resource
             ->schema([
                 Select::make('company_id')
                     ->label('Company')
-                    ->options(Company::all()->pluck('name', 'id')) // Memilih perusahaan
+                    ->options(Company::all()->pluck('name', 'id'))
                     ->required()
                     ->reactive(),
 
                 Select::make('horizontal_analysis_id')
                     ->label('Select Horizontal Analysis')
                     ->options(fn (callable $get) => HorizontalAnalysis::where('company_id', $get('company_id'))
-                        ->pluck('year', 'id')) // Memilih analisis horizontal
+                        ->pluck('year', 'id'))
                     ->required()
                     ->reactive()
                     ->afterStateUpdated(fn($state, callable $set) => self::loadHorizontalData($state, $set)),
 
+                Select::make('financial_data_id')
+                    ->label('Select Financial Data (Year)')
+                    ->options(fn (callable $get) => FinancialData::where('company_id', $get('company_id'))
+                        ->pluck('year', 'id'))
+                    ->required()
+                    ->reactive()
+                    ->afterStateUpdated(fn($state, callable $set) => self::loadFinancialData($state, $set)),
+
                 TextInput::make('year')
                     ->label('Year')
                     ->numeric()
-                    ->disabled(), // Disable karena ini dihitung dari Horizontal Analysis
+                    ->disabled(),
 
                 TextInput::make('dsri')->label('DSRI')->numeric()->disabled(),
                 TextInput::make('gmi')->label('GMI')->numeric()->disabled(),
@@ -69,8 +78,24 @@ class FraudAnalysisResource extends Resource
                     ->label('Company')
                     ->relationship('company', 'name'),
             ])
+            ->actions([
+                Tables\Actions\Action::make('view')
+                    ->label('View')
+                    ->icon('heroicon-o-eye')
+                    ->url(fn (FraudAnalysis $record) => route('fraud-analysis.view', $record->id))
+                    ->openUrlInNewTab(),
+
+                Tables\Actions\DeleteAction::make(),
+
+                Tables\Actions\Action::make('print')
+                    ->label('Print')
+                    ->icon('heroicon-o-printer')
+                    ->url(fn (FraudAnalysis $record) => route('fraud-analysis.print', $record->id))
+                    ->openUrlInNewTab(),
+
+            ])
             ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make(), // Bulk delete action
+                Tables\Actions\DeleteBulkAction::make(),
             ]);
     }
 
@@ -84,41 +109,85 @@ class FraudAnalysisResource extends Resource
     }
 
     /**
-     * Mengambil data dari Horizontal Analysis yang dipilih dan menghitung Beneish M-Score.
+     * Memuat data Horizontal Analysis yang dipilih dan menghitung TATA.
      */
     private static function loadHorizontalData($horizontalAnalysisId, callable $set)
     {
         $horizontalAnalysis = HorizontalAnalysis::find($horizontalAnalysisId);
 
         if ($horizontalAnalysis) {
-            // Set year berdasarkan Horizontal Analysis
+            $company_id = $horizontalAnalysis->company_id; // Mendapatkan company_id dari HorizontalAnalysis
             $set('year', $horizontalAnalysis->year);
 
-            // Menghitung rasio-rasio berdasarkan data Horizontal Analysis
-            $dsri = ($horizontalAnalysis->account_receivables_difference ?? 1) / ($horizontalAnalysis->sales_difference ?? 1);
-            $gmi = (($horizontalAnalysis->sales_difference - $horizontalAnalysis->cost_of_goods_sold_difference) ?? 1) /
-                (($horizontalAnalysis->sales_difference ?? 1) - ($horizontalAnalysis->cost_of_goods_sold_difference ?? 1));
-            $aqi = (($horizontalAnalysis->current_assets_difference + $horizontalAnalysis->plant_property_equipment_difference) ?? 1) / 
-                ($horizontalAnalysis->total_assets_difference ?? 1);
-            $sgi = ($horizontalAnalysis->sales_difference ?? 1) / ($horizontalAnalysis->previous_year_sales_difference ?? 1);
-            $depi = ($horizontalAnalysis->depreciation_difference ?? 1) / ($horizontalAnalysis->plant_property_equipment_difference ?? 1);
-            $sgai = ($horizontalAnalysis->sga_expenses_difference ?? 1) / ($horizontalAnalysis->sales_difference ?? 1);
-            $lvgi = ($horizontalAnalysis->long_term_debt_difference ?? 1) / ($horizontalAnalysis->total_assets_difference ?? 1);
-            $tata = ($horizontalAnalysis->working_capital_difference - $horizontalAnalysis->cash_difference - $horizontalAnalysis->current_taxes_payables_difference - $horizontalAnalysis->depreciation_amortization_difference) / ($horizontalAnalysis->total_assets_difference ?? 1);
+            // Perhitungan TATA menggunakan Horizontal Analysis
+            $working_capital_diff = $horizontalAnalysis->working_capital_difference ?? 0;
+            $cash_diff = $horizontalAnalysis->cash_difference ?? 0;
+            $tax_payable_diff = $horizontalAnalysis->current_taxes_payables_difference ?? 0;
+            $depreciation_amortization_diff = $horizontalAnalysis->depreciation_amortization_difference ?? 0;
+            $total_assets_diff = $horizontalAnalysis->total_assets_difference ?? 1;
 
-            // Menambahkan batasan (clamping) agar nilai tidak terlalu besar/kecil
-            $sgi = min(max($sgi, -999999), 999999);
+            $tata = ($working_capital_diff - $cash_diff - $tax_payable_diff - $depreciation_amortization_diff) / $total_assets_diff;
+            $tata = min(max($tata, -999999), 999999);
+
+            $set('tata', $tata);
+
+            // Update Fraud Analysis untuk TATA
+            FraudAnalysis::updateOrCreate(
+                [
+                    'horizontal_analysis_id' => $horizontalAnalysis->id
+                ],
+                [
+                    'company_id' => $company_id, // Pastikan company_id diisi
+                    'year' => $horizontalAnalysis->year,
+                    'tata' => $tata,
+                ]
+            );
+        }
+    }
+
+    /**
+     * Memuat data Financial Analysis yang dipilih dan menghitung rasio lainnya.
+     */
+    private static function loadFinancialData($financialDataId, callable $set)
+    {
+        $financialData = FinancialData::find($financialDataId);
+
+        if ($financialData) {
+            $company_id = $financialData->company_id; // Mendapatkan company_id dari FinancialData
+            $year = $financialData->year;
+
+            $sales_t_1 = FinancialData::where('company_id', $company_id)
+                ->where('year', $year - 1)
+                ->first();
+
+            if (!$sales_t_1) {
+                return;
+            }
+
+            // Menghitung rasio Beneish
+            $dsri = ($financialData->account_receivables / $financialData->sales) / ($sales_t_1->account_receivables / $sales_t_1->sales);
+            $gmi = (($financialData->sales - $financialData->cost_of_goods_sold) / $financialData->sales) /
+                (($sales_t_1->sales - $sales_t_1->cost_of_goods_sold) / $sales_t_1->sales);
+            $aqi = (($financialData->current_assets + $financialData->plant_property_equipment) / $financialData->total_assets) /
+                (($sales_t_1->current_assets + $sales_t_1->plant_property_equipment) / $sales_t_1->total_assets);
+            $sgi = $financialData->sales / $sales_t_1->sales;
+            $depi = ($sales_t_1->depreciation / ($sales_t_1->plant_property_equipment + $sales_t_1->depreciation)) /
+                ($financialData->depreciation / ($financialData->plant_property_equipment + $financialData->depreciation));
+            $sgai = ($financialData->sga_expenses / $financialData->sales) / ($sales_t_1->sga_expenses / $sales_t_1->sales);
+            $lvgi = ($financialData->current_liabilities / $financialData->total_assets) /
+                ($sales_t_1->current_liabilities / $sales_t_1->total_assets);
+
             $dsri = min(max($dsri, -999999), 999999);
             $gmi = min(max($gmi, -999999), 999999);
             $aqi = min(max($aqi, -999999), 999999);
+            $sgi = min(max($sgi, -999999), 999999);
             $depi = min(max($depi, -999999), 999999);
             $sgai = min(max($sgai, -999999), 999999);
             $lvgi = min(max($lvgi, -999999), 999999);
-            $tata = min(max($tata, -999999), 999999);
 
-            $beneish_m_score = -4.84 + (0.920 * $dsri) + (0.528 * $gmi) + (0.404 * $aqi) + (0.892 * $sgi) + (0.115 * $depi) - (0.172 * $sgai) + (4.679 * $tata) - (0.327 * $lvgi);
+            $beneish_m_score = -4.84 + (0.920 * $dsri) + (0.528 * $gmi) + (0.404 * $aqi) + (0.892 * $sgi) + (0.115 * $depi) - (0.172 * $sgai) + (4.679 * $lvgi);
 
-            // Simpan hasil ke dalam form untuk ditampilkan di UI
+            // Set hasil perhitungan di form
             $set('dsri', $dsri);
             $set('gmi', $gmi);
             $set('aqi', $aqi);
@@ -126,17 +195,16 @@ class FraudAnalysisResource extends Resource
             $set('depi', $depi);
             $set('sgai', $sgai);
             $set('lvgi', $lvgi);
-            $set('tata', $tata);
             $set('beneish_m_score', $beneish_m_score);
 
-            // Simpan ke database (insert/update Fraud Analysis)
+            // Update Fraud Analysis
             FraudAnalysis::updateOrCreate(
                 [
-                    'horizontal_analysis_id' => $horizontalAnalysis->id
+                    'financial_data_id' => $financialData->id
                 ],
                 [
-                    'company_id' => $horizontalAnalysis->company_id,
-                    'year' => $horizontalAnalysis->year,
+                    'company_id' => $company_id, // Pastikan company_id diisi
+                    'year' => $financialData->year,
                     'dsri' => $dsri,
                     'gmi' => $gmi,
                     'aqi' => $aqi,
@@ -144,7 +212,6 @@ class FraudAnalysisResource extends Resource
                     'depi' => $depi,
                     'sgai' => $sgai,
                     'lvgi' => $lvgi,
-                    'tata' => $tata,
                     'beneish_m_score' => $beneish_m_score,
                 ]
             );

@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\FraudAnalysisController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -17,6 +19,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+Route::get('/fraud-analysis/{record}/view', [FraudAnalysisController::class, 'show'])->name('fraud-analysis.view');
+Route::get('/fraud-analysis/{record}/print', [FraudAnalysisController::class, 'print'])->name('fraud-analysis.print');
 // Route::get('/login', function () {
 //     return redirect(route('filament.admin.auth.login'));
 // })->name('login');
