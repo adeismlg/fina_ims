@@ -30,5 +30,8 @@ class DatabaseSeeder extends Seeder
         $this->call(UserSeeder::class);
 
         Model::reguard(); // Enable mass assignment
+
+        //creating Company
+        $this->call(CompanySeeder::class);
     }
 }
