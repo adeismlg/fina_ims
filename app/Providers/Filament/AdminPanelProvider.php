@@ -34,8 +34,8 @@ class AdminPanelProvider extends PanelProvider
     {
         return $panel
             ->default()
-            ->brandName('IMS Admin')
-            ->brandLogo(asset('assets/logo.svg'))
+            ->brandName('Fina-Apps')
+            ->brandLogo(asset('assets/logo.png'))
             ->favicon(asset('favicon.ico'))
             ->id('admin')
             ->path('admin')

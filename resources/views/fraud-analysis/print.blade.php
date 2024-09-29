@@ -70,7 +70,7 @@
     </style>
 </head>
 <body>
-    <h1>Beneish M Score Calculator</h1>
+    <h1>Financial Fraud Report</h1>
 
     <div class="header">
         <strong>Company Name:</strong> {{ $record->company->name }} <br>
@@ -88,30 +88,64 @@
             </tr>
             <tr>
                 <td>Revenue</td>
-                <td>${{ number_format($financialDataCurrentYear->sales / 1000000, 2) }}</td>
-                <td>${{ number_format($financialDataPreviousYear->sales / 1000000, 2) }}</td>
+                <td>Rp.{{ number_format($financialDataCurrentYear->sales / 1000000, 2) }}</td>
+                <td>Rp.{{ number_format($financialDataPreviousYear->sales / 1000000, 2) }}</td>
             </tr>
             <tr>
                 <td>Cost of Goods Sold</td>
-                <td>${{ number_format($financialDataCurrentYear->cost_of_goods_sold / 1000000, 2) }}</td>
-                <td>${{ number_format($financialDataPreviousYear->cost_of_goods_sold / 1000000, 2) }}</td>
+                <td>Rp.{{ number_format($financialDataCurrentYear->cost_of_goods_sold / 1000000, 2) }}</td>
+                <td>Rp.{{ number_format($financialDataPreviousYear->cost_of_goods_sold / 1000000, 2) }}</td>
             </tr>
             <tr>
                 <td>SG&A Expenses</td>
-                <td>${{ number_format($financialDataCurrentYear->sga_expenses / 1000000, 2) }}</td>
-                <td>${{ number_format($financialDataPreviousYear->sga_expenses / 1000000, 2) }}</td>
+                <td>Rp.{{ number_format($financialDataCurrentYear->sga_expenses / 1000000, 2) }}</td>
+                <td>Rp.{{ number_format($financialDataPreviousYear->sga_expenses / 1000000, 2) }}</td>
             </tr>
             <tr>
                 <td>Depreciation</td>
-                <td>${{ number_format($financialDataCurrentYear->depreciation / 1000000, 2) }}</td>
-                <td>${{ number_format($financialDataPreviousYear->depreciation / 1000000, 2) }}</td>
+                <td>Rp.{{ number_format($financialDataCurrentYear->depreciation / 1000000, 2) }}</td>
+                <td>Rp.{{ number_format($financialDataPreviousYear->depreciation / 1000000, 2) }}</td>
             </tr>
             <tr>
                 <td>Total Assets</td>
-                <td>${{ number_format($financialDataCurrentYear->total_assets / 1000000, 2) }}</td>
-                <td>${{ number_format($financialDataPreviousYear->total_assets / 1000000, 2) }}</td>
+                <td>Rp.{{ number_format($financialDataCurrentYear->total_assets / 1000000, 2) }}</td>
+                <td>Rp.{{ number_format($financialDataPreviousYear->total_assets / 1000000, 2) }}</td>
             </tr>
-            <!-- Tambahkan data keuangan lainnya di sini sesuai kebutuhan -->
+            <tr>
+                <td>Accounts Receivables</td>
+                <td>Rp.{{ number_format($financialDataCurrentYear->account_receivables / 1000000, 2) }}</td>
+                <td>Rp.{{ number_format($financialDataPreviousYear->account_receivables / 1000000, 2) }}</td>
+            </tr>
+            <tr>
+                <td>Current Assets</td>
+                <td>Rp.{{ number_format($financialDataCurrentYear->current_assets / 1000000, 2) }}</td>
+                <td>Rp.{{ number_format($financialDataPreviousYear->current_assets / 1000000, 2) }}</td>
+            </tr>
+            <tr>
+                <td>Property, Plant, & Equipment</td>
+                <td>Rp.{{ number_format($financialDataCurrentYear->plant_property_equipment / 1000000, 2) }}</td>
+                <td>Rp.{{ number_format($financialDataPreviousYear->plant_property_equipment / 1000000, 2) }}</td>
+            </tr>
+            <tr>
+                <td>Current Liabilities</td>
+                <td>Rp.{{ number_format($financialDataCurrentYear->current_liabilities / 1000000, 2) }}</td>
+                <td>Rp.{{ number_format($financialDataPreviousYear->current_liabilities / 1000000, 2) }}</td>
+            </tr>
+            <tr>
+                <td>Total Liabilities</td>
+                <td>Rp.{{ number_format($financialDataCurrentYear->total_liabilities / 1000000, 2) }}</td>
+                <td>Rp.{{ number_format($financialDataPreviousYear->total_liabilities / 1000000, 2) }}</td>
+            </tr>
+            <tr>
+                <td>Long-Term Debt</td>
+                <td>Rp.{{ number_format($financialDataCurrentYear->long_term_debt / 1000000, 2) }}</td>
+                <td>Rp.{{ number_format($financialDataPreviousYear->long_term_debt / 1000000, 2) }}</td>
+            </tr>
+            <tr>
+                <td>Cash Flow from Operations</td>
+                <td>Rp.{{ number_format($financialDataCurrentYear->cash_flow_operations / 1000000, 2) }}</td>
+                <td>Rp.{{ number_format($financialDataPreviousYear->cash_flow_operations / 1000000, 2) }}</td>
+            </tr>
         </table>
     </div>
 
@@ -155,7 +189,24 @@
                 <td>N/A</td>
                 <td>{{ number_format($record->depi, 2) }}</td>
             </tr>
-            <!-- Tambahkan rasio lainnya di sini -->
+            <tr>
+                <td>SG&A Expenses Index (SGAI)</td>
+                <td>{{ number_format($record->sgai, 2) }}</td>
+                <td>N/A</td>
+                <td>{{ number_format($record->sgai, 2) }}</td>
+            </tr>
+            <tr>
+                <td>Leverage Index (LVGI)</td>
+                <td>{{ number_format($record->lvgi, 2) }}</td>
+                <td>N/A</td>
+                <td>{{ number_format($record->lvgi, 2) }}</td>
+            </tr>
+            <tr>
+                <td>Total Accruals to Total Assets (TATA)</td>
+                <td>{{ number_format($record->tata, 2) }}</td>
+                <td>N/A</td>
+                <td>{{ number_format($record->tata, 2) }}</td>
+            </tr>
         </table>
     </div>
 

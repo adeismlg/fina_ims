@@ -23,16 +23,39 @@ class FraudAnalysisController extends Controller
 
     public function print(FraudAnalysis $record)
     {
-        // Mengambil data dari FraudAnalysis, HorizontalAnalysis, dan FinancialData
+        // Cari Horizontal Analysis terkait
         $horizontalAnalysis = HorizontalAnalysis::find($record->horizontal_analysis_id);
+
+        // Ambil data keuangan untuk tahun berjalan
         $financialDataCurrentYear = FinancialData::where('company_id', $record->company_id)
             ->where('year', $horizontalAnalysis->year)
             ->first();
+
+        // Ambil data keuangan untuk tahun sebelumnya
         $financialDataPreviousYear = FinancialData::where('company_id', $record->company_id)
             ->where('year', $horizontalAnalysis->previous_year)
             ->first();
 
-        // Mengirimkan data ke view untuk ditampilkan
+        // Jika data tahun sebelumnya tidak ditemukan, buat placeholder
+        if (!$financialDataPreviousYear) {
+            $financialDataPreviousYear = [
+                'year' => $horizontalAnalysis->previous_year,
+                'sales' => null,
+                'cost_of_goods_sold' => null,
+                'sga_expenses' => null,
+                'depreciation' => null,
+                'total_assets' => null,
+                'account_receivables' => null,
+                'current_assets' => null,
+                'plant_property_equipment' => null,
+                'current_liabilities' => null,
+                'total_liabilities' => null,
+                'long_term_debt' => null,
+                'cash_flow_operations' => null,
+            ];
+        }
+
+        // Kirim data ke view untuk ditampilkan
         return view('fraud-analysis.print', [
             'record' => $record,
             'horizontalAnalysis' => $horizontalAnalysis,
